@@ -138,6 +138,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
+fvenv/
 env/
 venv/
 ENV/
@@ -205,3 +206,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# macOS
+.DS_Store
+
+# Project artifacts (outputs you don't want in Git)
+reports/
+*.db        # if you’ll generate SQLite baselines (e.g., fim.db)
+*.sqlite*
+logs/
+tmp/
