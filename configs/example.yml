@@ -8,8 +8,8 @@ report_dir: "reports"
 snapshot_dir: "snapshots"   
 
 # What to scan or skip 
-include:
-  - "**/*"                  # include everything by default
+include: []                 # include everything by default
+
 exclude:
   - "**/.git/**"
   - "**/__pycache__/**"
