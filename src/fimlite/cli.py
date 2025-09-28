@@ -1,6 +1,11 @@
 from pathlib import Path
 import typer
 from rich.console import Console
+import sys
+from pathlib import Path as _P
+sys.path.append(str(_P(__file__).resolve().parents[1])) 
+
+from fimlite.config import load_config, ConfigError
 
 app = typer.Typer(add_completion=False, help="FIMLite: File-Integrity Monitor")
 console = Console()
@@ -15,6 +20,18 @@ def init(
     config: Path = typer.Option(..., "--config", "-c", help="Path to YAML config file")
 ):
     """Create the baseline database and signature (implementation comes next)."""
+    """Create the baseline database and signature (implementation comes next)."""
+    try:
+        cfg = load_config(config)
+    except ConfigError as e:
+        console.print(f"[red]Config error:[/] {e}")
+        raise typer.Exit(code=1)
+
+    # If we got here, YAML is valid. Show a tiny success with two important fields.
+    console.print("[bold green]Config loaded successfully[/]")
+    console.print(f"root: {cfg.root}")
+    console.print(f"hash_alg: {cfg.hash_alg}")
+    # We'll plug real 'baseline' work here later.
     console.print(f"[bold]init[/] (stub) using config: {config}")
 
 @app.command()
