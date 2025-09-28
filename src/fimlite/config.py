@@ -1,159 +1,116 @@
-# src/fimlite/config.py
 from __future__ import annotations
-
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import yaml
+import sys
+import json
 
+class ConfigError(Exception):
+    """Raised when the YAML config is missing or invalid."""
+    pass
 
-class ConfigError(ValueError):
-    """Raised when the YAML config is missing/invalid."""
+@dataclass
+class SeverityRule:
+    pattern: str
+    level: str
 
-
-# Keep this intentionally small/simple for now.
-SUPPORTED_HASH_ALG = {"sha256"}
-
-# The keys we allow in the YAML file (helps catch typos).
-KNOWN_KEYS = {
-    "root",
-    "hash_alg",
-    "max_file_mb",
-    "follow_symlinks",
-    "ignore_hidden",
-    "include",
-    "exclude",
-    "severity",
-    "alerts",
-}
-
+@dataclass
+class Alerts:
+    mode: str          # "none" | "webhook"
+    webhook_url: str
 
 @dataclass
 class Config:
-    """
-    Simple container for validated settings.
-    Access fields like cfg.root, cfg.exclude, etc.
-    """
     root: Path
-    hash_alg: str = "sha256"
-    max_file_mb: int = 100
-    follow_symlinks: bool = False
-    ignore_hidden: bool = True
-    include: List[str] = field(default_factory=list)
-    exclude: List[str] = field(default_factory=lambda: [
-        "**/.git/**",
-        "**/node_modules/**",
-        "**/*.log",
-    ])
-    severity: Dict[str, str] = field(default_factory=lambda: {
-        "modified": "high",
-        "added": "medium",
-        "removed": "medium",
-    })
-    alerts: Dict[str, Any] = field(default_factory=lambda: {"type": "none"})
+    db_path: Path
+    report_dir: Path
+    snapshot_dir: Path
+    include: List[str]
+    exclude: List[str]
+    max_diff_bytes: int
+    severity: List[SeverityRule]
+    alerts: Alerts
 
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Config":
-        # 1) Required key
-        if "root" not in data or not data["root"]:
-            raise ConfigError("Missing required config key: 'root'")
+    def ensure_dirs(self) -> None: # Create output folders if missing so later code doesn't crash.
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.report_dir.mkdir(parents=True, exist_ok=True)
+        self.snapshot_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2) Unknown keys (helps you catch typos early)
-        unknown = set(data.keys()) - KNOWN_KEYS
-        if unknown:
-            raise ConfigError(f"Unknown config key(s): {', '.join(sorted(unknown))}")
-
-        # 3) Normalize/validate basic types & values
-        root = Path(str(data["root"])).expanduser().resolve()
-        if not (root.exists() and root.is_dir()):
-            raise ConfigError(f"'root' must be an existing directory: {root}")
-
-        hash_alg = str(data.get("hash_alg", "sha256")).lower()
-        if hash_alg not in SUPPORTED_HASH_ALG:
-            raise ConfigError(f"'hash_alg' must be one of: {sorted(SUPPORTED_HASH_ALG)}")
-
-        try:
-            max_file_mb = int(data.get("max_file_mb", 100))
-        except Exception as e:
-            raise ConfigError("'max_file_mb' must be an integer") from e
-        if max_file_mb <= 0:
-            raise ConfigError("'max_file_mb' must be > 0")
-
-        follow_symlinks = bool(data.get("follow_symlinks", False))
-        ignore_hidden = bool(data.get("ignore_hidden", True))
-
-        include = list(data.get("include", []) or [])
-        exclude = list(data.get("exclude", []) or [])
-
-        severity = dict(data.get("severity", {}) or {
-            "modified": "high",
-            "added": "medium",
-            "removed": "medium",
-        })
-
-        alerts = dict(data.get("alerts", {}) or {"type": "none"})
-
-        return cls(
-            root=root,
-            hash_alg=hash_alg,
-            max_file_mb=max_file_mb,
-            follow_symlinks=follow_symlinks,
-            ignore_hidden=ignore_hidden,
-            include=include,
-            exclude=exclude,
-            severity=severity,
-            alerts=alerts,
-        )
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Handy if we need to print or serialize the effective config later."""
+    def to_dict(self) -> Dict[str, Any]:         # Nice printable view (used by the little self-test below).
         return {
             "root": str(self.root),
-            "hash_alg": self.hash_alg,
-            "max_file_mb": self.max_file_mb,
-            "follow_symlinks": self.follow_symlinks,
-            "ignore_hidden": self.ignore_hidden,
+            "db_path": str(self.db_path),
+            "report_dir": str(self.report_dir),
+            "snapshot_dir": str(self.snapshot_dir),
             "include": self.include,
             "exclude": self.exclude,
-            "severity": self.severity,
-            "alerts": self.alerts,
+            "max_diff_bytes": self.max_diff_bytes,
+            "severity": [r.__dict__ for r in self.severity],
+            "alerts": self.alerts.__dict__,
         }
 
+def load_config(path: Path | str) -> Config: #     # Read YAML, validate fields, build a Config object.
+    cfg_path = Path(path).expanduser().resolve()
+    if not cfg_path.exists():
+        raise ConfigError(f"Config file not found: {cfg_path}")
 
-def load_config(path: Path) -> Config:
-    """
-    Open a YAML file, parse it safely, validate, and return a Config object.
-    """
-    path = Path(path)
-    if not path.exists():
-        raise ConfigError(f"Config file not found: {path}")
+    with cfg_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
 
-    try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    except yaml.YAMLError as e:
-        raise ConfigError(f"YAML parse error in {path}: {e}") from e
+    # required: root must be a real existing directory
+    root = Path(data.get("root", "")).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        raise ConfigError(f"'root' must be an existing directory: {root}")
 
-    if not isinstance(raw, dict):
-        raise ConfigError("Top-level YAML must be a mapping (key: value)")
+    # optional fields with sensible defaults
+    db_path = Path(data.get("db_path", "data/fimlite.db"))
+    report_dir = Path(data.get("report_dir", "reports"))
+    snapshot_dir = Path(data.get("snapshot_dir", "snapshots"))
+    include = list(data.get("include", ["**/*"]))
+    exclude = list(data.get("exclude", []))
+    max_diff_bytes = int(data.get("max_diff_bytes", 200_000))
 
-    return Config.from_dict(raw)
+    # lists of tiny objects
+    severity = [
+        SeverityRule(pattern=str(r.get("pattern", "**/*")), level=str(r.get("level", "low")))
+        for r in data.get("severity", [])
+    ]
+    alerts_raw = data.get("alerts", {})
+    alerts = Alerts(
+        mode=str(alerts_raw.get("mode", "none")),
+        webhook_url=str(alerts_raw.get("webhook_url", "")),
+    )
 
-'''
-# --- Self-test runner (optional) ---------------------------------------------
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
+    cfg = Config(
+        root=root,
+        db_path=db_path,
+        report_dir=report_dir,
+        snapshot_dir=snapshot_dir,
+        include=include,
+        exclude=exclude,
+        max_diff_bytes=max_diff_bytes,
+        severity=severity,
+        alerts=alerts,
+    )
+    cfg.ensure_dirs()
+    return cfg
 
-    # Allow: python src/fimlite/config.py configs/example.yml
-    cfg_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("configs/example.yml")
-    try:
-        cfg = load_config(cfg_path)
-    except ConfigError as e:
-        print(f"ConfigError: {e}")
+# ---- tiny self-test so you can run this file directly ----
+def _main(argv=None):
+    argv = argv if argv is not None else sys.argv[1:]
+    if not argv:
+        print("usage: python src/fimlite/config.py <path-to-yaml>")
         sys.exit(1)
 
-    # Pretty print the effective config
-    print("Loaded config:")
-    for k, v in cfg.to_dict().items():
-        print(f"  {k}: {v}")
-'''
+    try:
+        cfg = load_config(argv[0])
+    except ConfigError as e:
+        print(f"ConfigError: {e}")
+        sys.exit(2)
+
+    print("OK")
+    print(json.dumps(cfg.to_dict(), indent=2))
+
+if __name__ == "__main__":
+    _main()

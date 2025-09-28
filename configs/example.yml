@@ -1,16 +1,34 @@
-root: "./demo_watch"
-hash_alg: "sha256"
-max_file_mb: 100
-follow_symlinks: false
-ignore_hidden: true
-include: []
+# REQUIRED: change this to a real, existing folder on your Mac
+root: "./demo_watch"  # ← EDIT THIS for the original folder
+
+# Where the application stores its stuff 
+
+db_path: "data/fimlite.db"
+report_dir: "reports"
+snapshot_dir: "snapshots"   
+
+# What to scan or skip 
+include:
+  - "**/*"                  # include everything by default
 exclude:
   - "**/.git/**"
-  - "**/node_modules/**"
+  - "**/__pycache__/**"
   - "**/*.log"
+  - "**/node_modules/**"
+  - "**/.DS_Store"
+
+# Only produce diffs for small text files (size in bytes)
+max_diff_bytes: 200000      # ~200 KB
+
+# Simple severity rules (first match wins)
 severity:
-  modified: high
-  added: medium
-  removed: medium
+  - pattern: "**/*.sh"
+    level: high
+  - pattern: "**/*.py"
+    level: medium
+  - pattern: "**/*"
+    level: low
+
 alerts:
-  type: "none"
+  mode: "none"              # "none" | "webhook"
+  webhook_url: ""

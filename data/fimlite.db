@@ -1,0 +1,33 @@
+-- table of files in baseline
+CREATE TABLE IF NOT EXISTS baseline_files (
+  path TEXT PRIMARY KEY,
+  size INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  mtime REAL NOT NULL
+);
+
+-- scans log
+CREATE TABLE IF NOT EXISTS scans (
+  scan_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at TEXT NOT NULL,
+  ended_at TEXT NOT NULL
+);
+
+-- changes detected in a scan
+CREATE TABLE IF NOT EXISTS changes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  scan_id INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  change_type TEXT NOT NULL,     -- 'added' | 'removed' | 'modified'
+  old_sha256 TEXT,
+  new_sha256 TEXT,
+  severity TEXT,                 -- 'low' | 'medium' | 'high'
+  diff_path TEXT,                -- optional: where we saved a text diff
+  FOREIGN KEY(scan_id) REFERENCES scans(scan_id)
+);
+
+-- simple key-value for metadata (optional)
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
