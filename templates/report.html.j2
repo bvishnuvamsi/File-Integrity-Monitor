@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FIMLite — Scan {{ scan_id }}</title>
+  <style>
+    body { font-family: -apple-system, system-ui, Arial, sans-serif; margin: 32px; }
+    h1 { margin: 0 0 6px; }
+    .meta { color: #555; margin-bottom: 16px; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #eee; margin-right: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+    .type-added { color: #0a7b10; }
+    .type-removed { color: #b00020; }
+    .type-modified { color: #a15a00; }
+    .sev-low { background: #e8f0fe; }
+    .sev-medium { background: #fff4e5; }
+    .sev-high { background: #fdecea; }
+    code { background: #f7f7f7; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>FIMLite — Scan {{ scan_id }}</h1>
+  <div class="meta">
+    Started: <code>{{ started_at }}</code> • Ended: <code>{{ ended_at }}</code>
+  </div>
+
+  <div>
+    <span class="pill">Total: {{ counts.total }}</span>
+    <span class="pill">Added: {{ counts.added }}</span>
+    <span class="pill">Removed: {{ counts.removed }}</span>
+    <span class="pill">Modified: {{ counts.modified }}</span>
+    <span class="pill">Diffs: {{ counts.diffs }}</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Path</th>
+        <th>Type</th>
+        <th>Severity</th>
+        <th>Diff</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in changes %}
+      <tr>
+        <td><code>{{ c.path }}</code></td>
+        <td class="type-{{ c.change_type }}">{{ c.change_type }}</td>
+        <td><span class="pill sev-{{ c.severity }}">{{ c.severity }}</span></td>
+        <td>
+          {% if c.diff_href %}
+            <a href="{{ c.diff_href }}">view diff</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
