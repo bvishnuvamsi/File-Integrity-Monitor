@@ -145,6 +145,27 @@ open reports/scan-<ID>.html
 ```
 Important: To see multiple changes in one report, do all edits after baseline and before scan. Re-running baseline resets the reference.
 
+## Running the project: two easy options
+
+You can either **use `PYTHONPATH=src`** (no install) or **add `pyproject.toml` and install in editable mode** (cleaner CLI). Pick one.
+
+---
+
+### Option A — Run without installing (quickest)
+
+Use the `src/` layout directly by setting `PYTHONPATH`:
+
+```bash
+# Baseline (create known-good state + snapshots)
+PYTHONPATH=src python3 -m fimlite.cli baseline --config configs/example.yml
+
+# Scan (compare current state vs baseline and write HTML report)
+PYTHONPATH=src python3 -m fimlite.cli scan --config configs/example.yml
+
+# Select a new folder to monitor (persists in YAML)
+PYTHONPATH=src python3 -m fimlite.cli select-root --config configs/example.yml --path "/absolute/path/to/folder"
+```
+
 ## How It Works
 
 1. Baseline
@@ -216,7 +237,7 @@ Ensure you didn’t re-run baseline after editing. Flow: baseline → edit → s
 The file must be text, size ≤ max_diff_bytes, and have a baseline snapshot (snapshots/baseline/<relpath>). Baseline must be run before the edit.
 
 - ModuleNotFoundError: fimlite
-Use PYTHONPATH=src or add a pyproject.toml and <run pip install -e .>.
+Use PYTHONPATH=src or add a pyproject.toml and run pip install -e ..
 
 - DB error: “file is not a database”
 Rename the bad file and re-init:
