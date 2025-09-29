@@ -1,34 +1,22 @@
-# REQUIRED: change this to a real, existing folder on your Mac
-root: "./demo_watch"  # ← EDIT THIS for the original folder
-
-# Where the application stores its stuff 
-
-db_path: "data/fimlite.db"
-report_dir: "reports"
-snapshot_dir: "snapshots"   
-
-# What to scan or skip 
-include: []                 # include everything by default
-
+root: /Users/vishnuvamsibezawada/Documents/Vamsi/TAMU/BT-CS/Capstone-Project/Test
+db_path: data/fimlite.db
+report_dir: reports
+snapshot_dir: snapshots
+include: []
 exclude:
-  - "**/.git/**"
-  - "**/__pycache__/**"
-  - "**/*.log"
-  - "**/node_modules/**"
-  - "**/.DS_Store"
-
-# Only produce diffs for small text files (size in bytes)
-max_diff_bytes: 200000      # ~200 KB
-
-# Simple severity rules (first match wins)
+- '**/.git/**'
+- '**/__pycache__/**'
+- '**/*.log'
+- '**/node_modules/**'
+- '**/.DS_Store'
+max_diff_bytes: 200000
 severity:
-  - pattern: "**/*.sh"
-    level: high
-  - pattern: "**/*.py"
-    level: medium
-  - pattern: "**/*"
-    level: low
-
+- pattern: '**/*.sh'
+  level: high
+- pattern: '**/*.py'
+  level: medium
+- pattern: '**/*'
+  level: low
 alerts:
-  mode: "none"              # "none" | "webhook"
-  webhook_url: ""
+  mode: none
+  webhook_url: ''

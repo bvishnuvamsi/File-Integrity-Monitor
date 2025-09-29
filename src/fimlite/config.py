@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict, Any
+from typing import Optional
 import yaml
 import sys
 import json
@@ -111,6 +112,29 @@ def _main(argv=None):
 
     print("OK")
     print(json.dumps(cfg.to_dict(), indent=2))
+
+
+def set_root_in_yaml(cfg_path: Path | str, new_root: Path | str) -> Path:
+    """
+    Update the YAML file's 'root' to the given folder (absolute path).
+    Returns the resolved path set.
+    """
+    cfgp = Path(cfg_path).expanduser().resolve()
+    rootp = Path(new_root).expanduser().resolve()
+    if not rootp.exists() or not rootp.is_dir():
+        raise ConfigError(f"'root' must be an existing directory: {rootp}")
+
+    # load current yaml (or empty), update root, write back
+    with cfgp.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    data["root"] = str(rootp)
+
+    # keep keys order stable for readability
+    with cfgp.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, sort_keys=False)
+
+    return rootp
+
 
 if __name__ == "__main__":
     _main()
