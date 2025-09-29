@@ -159,3 +159,70 @@ Important: To see multiple changes in one report, do all edits after baseline an
 
 3. Report
 - Renders reports/scan-<id>.html with counts and a table; “view diff” opens the .diff file.
+
+Scheduling (cron) — optional
+
+- Run scan automatically (e.g., every 5 minutes).
+- Create bin/fim-scan.sh:
+
+```Code
+#!/usr/bin/env bash
+set -euo pipefail
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG="$PROJECT/configs/example.yml"
+LOG="$PROJECT/scan.log"
+
+# Use venv if present
+if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+  :
+elif [[ -f "$PROJECT/fvenv/bin/activate" ]]; then
+  source "$PROJECT/fvenv/bin/activate"
+elif [[ -f "$PROJECT/.venv/bin/activate" ]]; then
+  source "$PROJECT/.venv/bin/activate"
+fi
+
+cd "$PROJECT"
+echo "[$(date -u +%FT%TZ)] scan start" >> "$LOG"
+if PYTHONPATH=src python3 -m fimlite.cli scan --config "$CONFIG" >> "$LOG" 2>&1; then
+  echo "[$(date -u +%FT%TZ)] scan end (ok)" >> "$LOG"
+else
+  echo "[$(date -u +%FT%TZ)] scan end (FAILED)" >> "$LOG"
+fi
+```
+Give Execute Permission
+```Code
+chmod +x bin/fim-scan.sh
+```
+# Add crontab entries (macOS):
+
+```code
+crontab -e
+```
+
+# Jobs (absolute paths; log both stdout+stderr):
+
+```Code
+*/5 * * * * /Users/<your-username>/path/to/File-Integrity-Monitor/bin/fim-scan.sh >> /Users/<your-username>/fim_cron.log 2>&1
+* * * * * echo "cron ok $(date)" >> /Users/<your-username>/cron_test.log 2>&1
+```
+
+macOS:  Cron doesn’t run while asleep—use launchd for always-on or keep the Mac awake while testing (caffeinate -dimsu &).
+
+## Troubleshooting
+
+- “No changes” after a scan
+Ensure you didn’t re-run baseline after editing. Flow: baseline → edit → scan.
+
+- Diff link missing
+The file must be text, size ≤ max_diff_bytes, and have a baseline snapshot (snapshots/baseline/<relpath>). Baseline must be run before the edit.
+
+- ModuleNotFoundError: fimlite
+Use PYTHONPATH=src or add a pyproject.toml and run pip install -e ..
+
+- DB error: “file is not a database”
+Rename the bad file and re-init:
+
+```Code
+mv data/fimlite.db data/fimlite.db.bak
+PYTHONPATH=src python3 -m fimlite.cli baseline --config configs/example.yml
+```
