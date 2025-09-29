@@ -216,7 +216,7 @@ Ensure you didn’t re-run baseline after editing. Flow: baseline → edit → s
 The file must be text, size ≤ max_diff_bytes, and have a baseline snapshot (snapshots/baseline/<relpath>). Baseline must be run before the edit.
 
 - ModuleNotFoundError: fimlite
-Use PYTHONPATH=src or add a pyproject.toml and run pip install -e ..
+Use PYTHONPATH=src or add a pyproject.toml and <run pip install -e .>.
 
 - DB error: “file is not a database”
 Rename the bad file and re-init:
