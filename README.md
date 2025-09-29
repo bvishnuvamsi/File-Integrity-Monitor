@@ -193,13 +193,12 @@ Give Execute Permission
 ```Code
 chmod +x bin/fim-scan.sh
 ```
-# Add crontab entries (macOS):
+Add crontab entries (macOS):
 
 ```code
 crontab -e
 ```
-
-# Jobs (absolute paths; log both stdout+stderr):
+Jobs (absolute paths; log both stdout+stderr):
 
 ```Code
 */5 * * * * /Users/<your-username>/path/to/File-Integrity-Monitor/bin/fim-scan.sh >> /Users/<your-username>/fim_cron.log 2>&1
@@ -224,5 +223,18 @@ Rename the bad file and re-init:
 
 ```Code
 mv data/fimlite.db data/fimlite.db.bak
+PYTHONPATH=src python3 -m fimlite.cli baseline --config configs/example.yml
+```
+## FAQ
+
+### Does FIMLite run continuously in the background?
+No. It runs **on demand** (`scan`) or on a **schedule** (via `cron`) to stay simple and light.
+
+### Will it detect changes made outside the CLI?
+Yes. Any edits in the watched folder are detected the next time `scan` runs (manual or scheduled).
+
+### How do I switch the monitored folder?
+```bash
+PYTHONPATH=src python3 -m fimlite.cli select-root --config configs/example.yml --path "/new/folder"
 PYTHONPATH=src python3 -m fimlite.cli baseline --config configs/example.yml
 ```
