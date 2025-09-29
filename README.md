@@ -70,7 +70,7 @@ File-Integrity-Monitor/
 - Python packages: PyYAML, Jinja2 (install below)
 
 ```Code
-Clone
+# Clone
 git clone <YOUR_REPO_URL> File-Integrity-Monitor
 cd File-Integrity-Monitor
 
@@ -82,3 +82,80 @@ source fvenv/bin/activate
 pip install --upgrade pip
 pip install PyYAML Jinja2
 ```
+## Configuration
+
+Edit configs/example.yml:
+```Code
+# Folder to monitor (absolute path recommended)
+root: "/absolute/path/to/your/folder"
+
+# Output locations (relative to repo root)
+db_path: "data/fimlite.db"
+report_dir: "reports"
+snapshot_dir: "snapshots"
+
+# Include/Exclude patterns (glob; match RELATIVE paths under 'root')
+# include: [] means "include everything" (recommended)
+include: [] # include: ["*", "**/*"]
+exclude:
+  - "**/.git/**"
+  - "**/__pycache__/**"
+  - "**/*.log"
+  - "**/node_modules/**"
+  - "**/.DS_Store"
+
+# Diff size cap (bytes): skip diff for larger files
+max_diff_bytes: 200000
+
+# Severity rules (first match wins)
+severity:
+  - { pattern: "**/*.sh", level: high }
+  - { pattern: "**/*.py", level: medium }
+  - { pattern: "**/*",    level: low }
+```
+
+## Usage (CLI)
+
+This repo uses a src/ layout. Use PYTHONPATH=src or install the package in editable mode.
+
+1) Choose the folder to monitor (persists in YAML)
+
+```Code
+PYTHONPATH=src python3 -m fimlite.cli select-root --config configs/example.yml \
+  --path "/absolute/path/to/your/folder"
+```
+2) Create a baseline (known-good state + snapshots for diffs)
+
+```Code
+PYTHONPATH=src python3 -m fimlite.cli baseline --config configs/example.yml
+```
+3) Make changes inside the watched folder
+
+- Edit a text file → modified (+ diff)
+- Add a file → added
+- Delete a file → removed
+
+4) Scan and open the report it prints
+
+```Code
+PYTHONPATH=src python3 -m fimlite.cli scan --config configs/example.yml
+# → prints JSON including: "report": "reports/scan-<ID>.html"
+
+open reports/scan-<ID>.html
+```
+Important: To see multiple changes in one report, do all edits after baseline and before scan. Re-running baseline resets the reference.
+
+## How It Works
+
+1. Baseline
+- Walk folder → record path, size, sha256, mtime in SQLite → snapshot small text files (for diffs).
+
+2. Scan
+- Walk again → compare with baseline using SHA-256:
+- added: in current, not in baseline
+- removed: in baseline, not in current
+-  modified: same path, content hash changed
+- For modified text files with snapshots and under max_diff_bytes, write a unified diff and link it in the report.
+
+3. Report
+- Renders reports/scan-<id>.html with counts and a table; “view diff” opens the .diff file.
