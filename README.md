@@ -66,7 +66,7 @@ File-Integrity-Monitor/
 ## Requirements
 
 - Python 3.10+
-- Recommended: a virtual environment (python3 -m venv fvenv)
+- Recommended: a virtual environment (`python3 -m venv fvenv`)
 - Python packages: PyYAML, Jinja2 (install below)
 
 ```Code
@@ -116,7 +116,7 @@ severity:
 
 ## Usage (CLI)
 
-This repo uses a src/ layout. Use PYTHONPATH=src or install the package in editable mode.
+This repo uses a src/ layout. Use `PYTHONPATH=src` or install the package in editable mode.
 
 1) Choose the folder to monitor (persists in YAML)
 
@@ -146,9 +146,6 @@ open reports/scan-<ID>.html
 Important: To see multiple changes in one report, do all edits after baseline and before scan. Re-running baseline resets the reference.
 
 ## Running the project: two easy options
-
-You can either **use `PYTHONPATH=src`** (no install) or **add `pyproject.toml` and install in editable mode** (cleaner CLI). Pick one.
-
 ---
 
 ### Option A — Run without installing (quickest)
@@ -179,7 +176,7 @@ PYTHONPATH=src python3 -m fimlite.cli select-root --config configs/example.yml -
 - For modified text files with snapshots and under max_diff_bytes, write a unified diff and link it in the report.
 
 3. Report
-- Renders reports/scan-<id>.html with counts and a table; “view diff” opens the .diff file.
+- Renders `reports/scan-<id>.html` with counts and a table; “view diff” opens the .diff file.
 
 Scheduling (cron) — optional
 
@@ -237,7 +234,7 @@ Ensure you didn’t re-run baseline after editing. Flow: baseline → edit → s
 The file must be text, size ≤ max_diff_bytes, and have a baseline snapshot (snapshots/baseline/<relpath>). Baseline must be run before the edit.
 
 - ModuleNotFoundError: fimlite
-Use PYTHONPATH=src or add a pyproject.toml and run pip install -e ..
+Use `PYTHONPATH=src` or add a pyproject.toml and `run pip install -e .`.
 
 - DB error: “file is not a database”
 Rename the bad file and re-init:
