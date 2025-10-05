@@ -257,3 +257,5 @@ Yes. Any edits in the watched folder are detected the next time `scan` runs (man
 PYTHONPATH=src python3 -m fimlite.cli select-root --config configs/example.yml --path "/new/folder"
 PYTHONPATH=src python3 -m fimlite.cli baseline --config configs/example.yml
 ```
+
+** Github Link ** : https://github.com/bvishnuvamsi/File-Integrity-Monitor 
