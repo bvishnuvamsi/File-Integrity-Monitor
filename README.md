@@ -144,6 +144,7 @@ PYTHONPATH=src python3 -m fimlite.cli scan --config configs/example.yml
 open reports/scan-<ID>.html
 ```
 Important: To see multiple changes in one report, do all edits after baseline and before scan. Re-running baseline resets the reference.
+** Note ** : There are few sample html files that recorded the changes.
 
 ## Running the project: two easy options
 ---
